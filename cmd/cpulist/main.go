@@ -21,6 +21,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"strconv"
 	"strings"
 
 	flag "github.com/spf13/pflag"
@@ -34,6 +35,8 @@ func main() {
 	var procfsRoot = flag.StringP("procfs", "P", "/proc", "procfs root")
 	var cpuList = flag.StringP("cpu-list", "c", "", "cpulist to split")
 	var srcFile = flag.StringP("from-file", "f", "", "read the cpulist to split from the given file")
+	// string because we need to handle the "self" special case
+	var pidID = flag.StringP("pid", "p", "self", "read the cpulist for this pid")
 	flag.Parse()
 
 	var cpus cpuset.CPUSet
@@ -54,7 +57,18 @@ func main() {
 	} else if *cpuList != "" {
 		cpus = parseCPUsOrDie(*cpuList)
 	} else {
-		cpus = allowedCPUsOrDie(*procfsRoot)
+		var pid int
+		if *pidID == "self" {
+			pid = 0
+		} else {
+			v, err := strconv.Atoi(*pidID)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "error parsing the pid %q: %v\n", *pidID, err)
+				os.Exit(3)
+			}
+			pid = v
+		}
+		cpus = allowedCPUsOrDie(*procfsRoot, pid)
 	}
 	printCPUList(cpus)
 }
@@ -68,12 +82,12 @@ func parseCPUsOrDie(cpuList string) cpuset.CPUSet {
 	return cpus
 }
 
-func allowedCPUsOrDie(procfsRoot string) cpuset.CPUSet {
+func allowedCPUsOrDie(procfsRoot string, pid int) cpuset.CPUSet {
 	nullLog := log.New(ioutil.Discard, "", 0)
 	ph := procs.New(nullLog, procfsRoot)
-	info, err := ph.FromPID(0)
+	info, err := ph.FromPID(pid)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "error reading process status for pid self: %v\n", err)
+		fmt.Fprintf(os.Stderr, "error reading process status for pid %d (0=self): %v\n", pid, err)
 		os.Exit(4)
 	}
 	// consolidate all the cpus:
