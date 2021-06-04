@@ -4,12 +4,14 @@ go 1.15
 
 require (
 	github.com/davecgh/go-spew v1.1.1
-	github.com/google/go-cmp v0.5.2
+	github.com/google/cadvisor v0.39.0
+	github.com/google/go-cmp v0.5.4
 	github.com/jaypipes/ghw v0.8.1-0.20210605191321-eb162add542b
 	github.com/onsi/ginkgo v1.11.0
 	github.com/onsi/gomega v1.7.0
 	github.com/spf13/cobra v1.1.1
 	github.com/spf13/pflag v1.0.5
+	k8s.io/klog/v2 v2.8.0
 	k8s.io/kubelet v0.0.0
 	k8s.io/kubernetes v0.0.0-00010101000000-000000000000
 )
