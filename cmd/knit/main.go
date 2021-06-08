@@ -23,6 +23,7 @@ import (
 	"github.com/openshift-kni/debug-tools/pkg/knit/cmd"
 	"github.com/openshift-kni/debug-tools/pkg/knit/cmd/ghw"
 	"github.com/openshift-kni/debug-tools/pkg/knit/cmd/k8s"
+	"github.com/openshift-kni/debug-tools/pkg/knit/cmd/machineinfo"
 )
 
 func main() {
@@ -31,6 +32,7 @@ func main() {
 		ghw.NewLscpuCommand,
 		ghw.NewLspciCommand,
 		ghw.NewLstopoCommand,
+		machineinfo.NewMachineInfoCommand,
 	)
 	if err := root.Execute(); err != nil {
 		fmt.Fprintf(os.Stderr, "%v\n", err)
