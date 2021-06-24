@@ -83,6 +83,7 @@ func NewRootCommand(extraCmds ...NewCommandFunc) *cobra.Command {
 		NewCPUAffinityCommand(knitOpts),
 		NewIRQAffinityCommand(knitOpts),
 		NewIRQWatchCommand(knitOpts),
+		NewSnapProcCommand(knitOpts),
 		NewWaitCommand(knitOpts),
 	)
 	for _, extraCmd := range extraCmds {
