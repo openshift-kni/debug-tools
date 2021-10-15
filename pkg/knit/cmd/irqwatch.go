@@ -17,8 +17,6 @@
 package cmd
 
 import (
-	"encoding/json"
-	"fmt"
 	"os"
 	"os/signal"
 	"time"
@@ -26,7 +24,6 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/openshift-kni/debug-tools/pkg/irqs"
-	"k8s.io/kubernetes/pkg/kubelet/cm/cpuset"
 )
 
 type irqWatchOptions struct {
@@ -79,7 +76,7 @@ func watchIRQs(cmd *cobra.Command, knitOpts *KnitOptions, opts *irqWatchOptions,
 
 	prevStats = initStats.Clone()
 	ticker := time.NewTicker(period)
-	reporter := NewIRQReporter(knitOpts.JsonOutput, opts.verbose, knitOpts.Cpus)
+	reporter := irqs.NewReporter(os.Stdout, knitOpts.JsonOutput, opts.verbose, knitOpts.Cpus)
 
 	done := false
 	iterCount := 1
@@ -107,118 +104,4 @@ func watchIRQs(cmd *cobra.Command, knitOpts *KnitOptions, opts *irqWatchOptions,
 
 	reporter.Summary(initTs, initStats, lastStats)
 	return nil
-}
-
-type IRQReporter interface {
-	Delta(ts time.Time, prevStats, lastStats irqs.Stats)
-	Summary(initTs time.Time, prevStats, lastStats irqs.Stats)
-}
-
-func NewIRQReporter(jsonOutput bool, verbose int, cpus cpuset.CPUSet) IRQReporter {
-	if jsonOutput {
-		return &irqReporterJSON{
-			verbose: verbose,
-			cpus:    cpus,
-		}
-	}
-	return &irqReporterText{
-		verbose: verbose,
-		cpus:    cpus,
-	}
-
-}
-
-type irqReporterText struct {
-	verbose int
-	cpus    cpuset.CPUSet
-}
-
-func (w *irqReporterText) Delta(ts time.Time, prevStats, lastStats irqs.Stats) {
-	if w.verbose < 2 {
-		return
-	}
-	delta := prevStats.Delta(lastStats)
-	cpuids := w.cpus.ToSlice()
-	for _, cpuid := range cpuids {
-		counter, ok := delta[cpuid]
-		if !ok {
-			continue
-		}
-		for irqName, val := range counter {
-			if val == 0 {
-				continue
-			}
-			fmt.Printf("%v CPU=%d IRQ=%s +%d\n", ts, cpuid, irqName, val)
-		}
-	}
-}
-
-func (w *irqReporterText) Summary(initTs time.Time, prevStats, lastStats irqs.Stats) {
-	if w.verbose < 1 {
-		return
-	}
-	timeDelta := time.Now().Sub(initTs)
-	delta := prevStats.Delta(lastStats)
-	cpuids := w.cpus.ToSlice()
-
-	fmt.Printf("\nIRQ summary on cpus %v after %v\n", w.cpus, timeDelta)
-	for _, cpuid := range cpuids {
-		counter, ok := delta[cpuid]
-		if !ok {
-			continue
-		}
-		for irqName, val := range counter {
-			if val == 0 {
-				continue
-			}
-			fmt.Printf("CPU=%d IRQ=%s +%d\n", cpuid, irqName, val)
-		}
-	}
-}
-
-type irqReporterJSON struct {
-	verbose int
-	cpus    cpuset.CPUSet
-}
-
-type irqDelta struct {
-	Timestamp time.Time  `json:"timestamp"`
-	Counters  irqs.Stats `json:"counters"`
-}
-
-func (w *irqReporterJSON) Delta(ts time.Time, prevStats, lastStats irqs.Stats) {
-	if w.verbose < 2 {
-		return
-	}
-	res := irqDelta{
-		Timestamp: ts,
-		Counters:  prevStats.Delta(lastStats).ForCPUs(w.cpus),
-	}
-	json.NewEncoder(os.Stdout).Encode(res)
-}
-
-type irqwatchDuration struct {
-	d time.Duration
-}
-
-func (d irqwatchDuration) MarshalJSON() (b []byte, err error) {
-	return []byte(fmt.Sprintf(`"%s"`, d.d.String())), nil
-}
-
-type irqSummary struct {
-	Elapsed  irqwatchDuration `json:"elapsed"`
-	Counters irqs.Stats       `json:"counters"`
-}
-
-func (w *irqReporterJSON) Summary(initTs time.Time, prevStats, lastStats irqs.Stats) {
-	if w.verbose < 1 {
-		return
-	}
-	res := irqSummary{
-		Elapsed: irqwatchDuration{
-			d: time.Now().Sub(initTs),
-		},
-		Counters: prevStats.Delta(lastStats).ForCPUs(w.cpus),
-	}
-	json.NewEncoder(os.Stdout).Encode(res)
 }

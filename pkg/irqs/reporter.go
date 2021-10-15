@@ -19,7 +19,7 @@ package irqs
 import (
 	"encoding/json"
 	"fmt"
-	"os"
+	"io"
 	"time"
 
 	"k8s.io/kubernetes/pkg/kubelet/cm/cpuset"
@@ -30,16 +30,18 @@ type Reporter interface {
 	Summary(initTs time.Time, prevStats, lastStats Stats)
 }
 
-func NewReporter(jsonOutput bool, verbose int, cpus cpuset.CPUSet) Reporter {
+func NewReporter(sink io.Writer, jsonOutput bool, verbose int, cpus cpuset.CPUSet) Reporter {
 	if jsonOutput {
 		return &reporterJSON{
 			verbose: verbose,
 			cpus:    cpus,
+			sink:    sink,
 		}
 	}
 	return &reporterText{
 		verbose: verbose,
 		cpus:    cpus,
+		sink:    sink,
 	}
 
 }
@@ -47,14 +49,15 @@ func NewReporter(jsonOutput bool, verbose int, cpus cpuset.CPUSet) Reporter {
 type reporterText struct {
 	verbose int
 	cpus    cpuset.CPUSet
+	sink    io.Writer
 }
 
-func (w *reporterText) Delta(ts time.Time, prevStats, lastStats Stats) {
-	if w.verbose < 2 {
+func (rt *reporterText) Delta(ts time.Time, prevStats, lastStats Stats) {
+	if rt.verbose < 2 {
 		return
 	}
 	delta := prevStats.Delta(lastStats)
-	cpuids := w.cpus.ToSlice()
+	cpuids := rt.cpus.ToSlice()
 	for _, cpuid := range cpuids {
 		counter, ok := delta[cpuid]
 		if !ok {
@@ -64,20 +67,20 @@ func (w *reporterText) Delta(ts time.Time, prevStats, lastStats Stats) {
 			if val == 0 {
 				continue
 			}
-			fmt.Printf("%v CPU=%d IRQ=%s +%d\n", ts, cpuid, irqName, val)
+			fmt.Fprintf(rt.sink, "%v CPU=%d IRQ=%s +%d\n", ts, cpuid, irqName, val)
 		}
 	}
 }
 
-func (w *reporterText) Summary(initTs time.Time, prevStats, lastStats Stats) {
-	if w.verbose < 1 {
+func (rt *reporterText) Summary(initTs time.Time, prevStats, lastStats Stats) {
+	if rt.verbose < 1 {
 		return
 	}
 	timeDelta := time.Now().Sub(initTs)
 	delta := prevStats.Delta(lastStats)
-	cpuids := w.cpus.ToSlice()
+	cpuids := rt.cpus.ToSlice()
 
-	fmt.Printf("\nIRQ summary on cpus %v after %v\n", w.cpus, timeDelta)
+	fmt.Fprintf(rt.sink, "\nIRQ summary on cpus %v after %v\n", rt.cpus, timeDelta)
 	for _, cpuid := range cpuids {
 		counter, ok := delta[cpuid]
 		if !ok {
@@ -87,7 +90,7 @@ func (w *reporterText) Summary(initTs time.Time, prevStats, lastStats Stats) {
 			if val == 0 {
 				continue
 			}
-			fmt.Printf("CPU=%d IRQ=%s +%d\n", cpuid, irqName, val)
+			fmt.Fprintf(rt.sink, "CPU=%d IRQ=%s +%d\n", cpuid, irqName, val)
 		}
 	}
 }
@@ -95,6 +98,7 @@ func (w *reporterText) Summary(initTs time.Time, prevStats, lastStats Stats) {
 type reporterJSON struct {
 	verbose int
 	cpus    cpuset.CPUSet
+	sink    io.Writer
 }
 
 type irqDelta struct {
@@ -102,15 +106,15 @@ type irqDelta struct {
 	Counters  Stats     `json:"counters"`
 }
 
-func (w *reporterJSON) Delta(ts time.Time, prevStats, lastStats Stats) {
-	if w.verbose < 2 {
+func (rj *reporterJSON) Delta(ts time.Time, prevStats, lastStats Stats) {
+	if rj.verbose < 2 {
 		return
 	}
 	res := irqDelta{
 		Timestamp: ts,
-		Counters:  countersForCPUs(w.cpus, prevStats.Delta(lastStats)),
+		Counters:  countersForCPUs(rj.cpus, prevStats.Delta(lastStats)),
 	}
-	json.NewEncoder(os.Stdout).Encode(res)
+	json.NewEncoder(rj.sink).Encode(res)
 }
 
 type irqwatchDuration struct {
@@ -126,17 +130,17 @@ type irqSummary struct {
 	Counters Stats            `json:"counters"`
 }
 
-func (w *reporterJSON) Summary(initTs time.Time, prevStats, lastStats Stats) {
-	if w.verbose < 1 {
+func (rj *reporterJSON) Summary(initTs time.Time, prevStats, lastStats Stats) {
+	if rj.verbose < 1 {
 		return
 	}
 	res := irqSummary{
 		Elapsed: irqwatchDuration{
 			d: time.Now().Sub(initTs),
 		},
-		Counters: countersForCPUs(w.cpus, prevStats.Delta(lastStats)),
+		Counters: countersForCPUs(rj.cpus, prevStats.Delta(lastStats)),
 	}
-	json.NewEncoder(os.Stdout).Encode(res)
+	json.NewEncoder(rj.sink).Encode(res)
 }
 
 func countersForCPUs(cpus cpuset.CPUSet, stats Stats) Stats {
