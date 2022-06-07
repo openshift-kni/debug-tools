@@ -30,6 +30,7 @@ import (
 func main() {
 	root := cmd.NewRootCommand(
 		k8s.NewPodResourcesCommand,
+		k8s.NewKubeletPodsCommand,
 		ghw.NewLscpuCommand,
 		ghw.NewLspciCommand,
 		ghw.NewLstopoCommand,
