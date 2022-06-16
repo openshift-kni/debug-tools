@@ -50,6 +50,7 @@ func (handle *Handle) Run() {
 		info.NumPhysicalCores = 0
 		info.CpuFrequency = 0
 		info.MemoryCapacity = 0
+		info.CPUVendorID = ""
 	}
 	if handle.CleanTimestamp {
 		info.Timestamp = time.Date(2000, time.January, 1, 0, 0, 0, 0, time.UTC)

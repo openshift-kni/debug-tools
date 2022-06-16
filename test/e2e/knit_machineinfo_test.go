@@ -21,11 +21,9 @@ var _ = g.Describe("knit machineinfo tests", func() {
 
 	g.Context("With isolated, reserved CPUs", func() {
 		g.It("Produces the expected machineinfo output", func() {
-			g.Skip("broken until we refresh the machineinfo data")
 
 			cmdline := []string{
 				filepath.Join(binariesPath, "knit"),
-				"-P", filepath.Join(snapshotRoot, "proc"),
 				"-S", filepath.Join(snapshotRoot, "sys"),
 				"machineinfo",
 				"--clean-timestamp",
