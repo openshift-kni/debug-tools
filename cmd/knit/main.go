@@ -27,6 +27,7 @@ import (
 func main() {
 	root := cmd.NewRootCommand(
 		k8s.NewPodResourcesCommand,
+		k8s.NewPodInfoCommand,
 	)
 	if err := root.Execute(); err != nil {
 		fmt.Fprintf(os.Stderr, "%v\n", err)
