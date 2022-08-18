@@ -73,9 +73,11 @@ const defaultTemplate string = `
 					"limits": {
 						"cpu": "{{.Resources.Limits.Cpu}}"
 					}
-					{{- end }}{{end}}
-					{{- if .Resources.Requests}}{{if .Resources.Requests.Cpu -}}
+					{{- end -}}{{end}}
+					{{- if and .Resources.Requests .Resources.Limits .Resources.Requests.Cpu .Resources.Limits.Cpu -}}
 					,
+					{{- end -}}
+					{{- if .Resources.Requests}}{{if .Resources.Requests.Cpu }}
 					"requests": {
 						"cpu": "{{.Resources.Requests.Cpu}}"
 					}
