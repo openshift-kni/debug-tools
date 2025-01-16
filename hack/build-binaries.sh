@@ -17,6 +17,6 @@ for name in $( ls "${BASEDIR}/cmd/" ); do
 	if [ ! -d "${path}" ]; then
 		continue
 	fi
-	echo "go build -v -o \"${BASEDIR}/_output/${name}\" \"${path}\""
-	go build -v -o "${BASEDIR}/_output/${name}${suffix}" "${path}"
+	echo "go build -o \"${BASEDIR}/_output/${name}\" \"${path}\""
+	go build -o "${BASEDIR}/_output/${name}${suffix}" "${path}"
 done
