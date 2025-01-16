@@ -38,11 +38,11 @@ jobs:
 
     - name: fix build artifacts
       run: |
-        for tool in knit cpulist numalign; do
+        for tool in knit cpulist; do
           mv _output/$tool $tool-${{ env.RELEASE_VERSION }}-linux-amd64
         done
         make clean outdir
-        for tool in knit cpulist numalign; do
+        for tool in knit cpulist; do
           mv $tool-${{ env.RELEASE_VERSION}}-linux-amd64 _output/
         done
 
