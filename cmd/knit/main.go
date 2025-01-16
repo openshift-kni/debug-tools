@@ -20,15 +20,15 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/openshift-kni/debug-tools/pkg/knit/cmd"
-	"github.com/openshift-kni/debug-tools/pkg/knit/cmd/ethtool"
-	"github.com/openshift-kni/debug-tools/pkg/knit/cmd/ghw"
-	"github.com/openshift-kni/debug-tools/pkg/knit/cmd/k8s"
-	"github.com/openshift-kni/debug-tools/pkg/knit/cmd/machineinfo"
+	"github.com/openshift-kni/debug-tools/internal/cli/knit"
+	"github.com/openshift-kni/debug-tools/internal/cli/knit/ethtool"
+	"github.com/openshift-kni/debug-tools/internal/cli/knit/ghw"
+	"github.com/openshift-kni/debug-tools/internal/cli/knit/k8s"
+	"github.com/openshift-kni/debug-tools/internal/cli/knit/machineinfo"
 )
 
 func main() {
-	root := cmd.NewRootCommand(
+	root := knit.NewRootCommand(
 		k8s.NewPodResourcesCommand,
 		k8s.NewPodInfoCommand,
 		ghw.NewLscpuCommand,

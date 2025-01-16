@@ -26,10 +26,10 @@ import (
 	"github.com/jaypipes/ghw/pkg/pci"
 	"github.com/jaypipes/ghw/pkg/topology"
 
-	"github.com/openshift-kni/debug-tools/pkg/knit/cmd"
+	"github.com/openshift-kni/debug-tools/internal/cli/knit"
 )
 
-func NewLstopoCommand(knitOpts *cmd.KnitOptions) *cobra.Command {
+func NewLstopoCommand(knitOpts *knit.KnitOptions) *cobra.Command {
 	topo := &cobra.Command{
 		Use:   "lstopo",
 		Short: "show the system topology",
@@ -43,7 +43,7 @@ func NewLstopoCommand(knitOpts *cmd.KnitOptions) *cobra.Command {
 	return topo
 }
 
-func NewLscpuCommand(knitOpts *cmd.KnitOptions) *cobra.Command {
+func NewLscpuCommand(knitOpts *knit.KnitOptions) *cobra.Command {
 	topo := &cobra.Command{
 		Use:   "lscpu",
 		Short: "show the system CPU details",
@@ -57,7 +57,7 @@ func NewLscpuCommand(knitOpts *cmd.KnitOptions) *cobra.Command {
 	return topo
 }
 
-func NewLspciCommand(knitOpts *cmd.KnitOptions) *cobra.Command {
+func NewLspciCommand(knitOpts *knit.KnitOptions) *cobra.Command {
 	topo := &cobra.Command{
 		Use:   "lspci",
 		Short: "show the system PCI details",
@@ -76,7 +76,7 @@ type encodable interface {
 	YAMLString() string
 }
 
-func processInfo(knitOpts *cmd.KnitOptions, info encodable, err error) error {
+func processInfo(knitOpts *knit.KnitOptions, info encodable, err error) error {
 	if err == nil {
 		if knitOpts.JsonOutput {
 			fmt.Printf("%s\n", info.JSONString(true))
@@ -87,7 +87,7 @@ func processInfo(knitOpts *cmd.KnitOptions, info encodable, err error) error {
 	return err
 }
 
-func ghwOptionsFromKnit(knitOpts *cmd.KnitOptions) []*option.Option {
+func ghwOptionsFromKnit(knitOpts *knit.KnitOptions) []*option.Option {
 	return []*option.Option{
 		option.WithPathOverrides(option.PathOverrides{
 			"/proc": knitOpts.ProcFSRoot,

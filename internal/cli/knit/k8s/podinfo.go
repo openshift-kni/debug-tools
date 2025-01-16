@@ -29,7 +29,7 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 
-	"github.com/openshift-kni/debug-tools/pkg/knit/cmd"
+	"github.com/openshift-kni/debug-tools/internal/cli/knit"
 	"github.com/spf13/cobra"
 )
 
@@ -37,7 +37,7 @@ type podInfoOptions struct {
 	nodeName string
 }
 
-//Only need some info about the pod.
+// Only need some info about the pod.
 // Right now is:
 // - pod name
 // - pod namespace
@@ -46,6 +46,7 @@ type podInfoOptions struct {
 // - containers
 //   - requests cpu
 //   - limits cpu
+//
 // Note this output format could change but it would be parsed on insight rules
 // so the change should be sync with it.
 // Caution: We filter the data from pods to avoid exposing sensible information
@@ -92,7 +93,7 @@ const defaultTemplate string = `
 	{{- end }}
 ]`
 
-func NewPodInfoCommand(knitOpts *cmd.KnitOptions) *cobra.Command {
+func NewPodInfoCommand(knitOpts *knit.KnitOptions) *cobra.Command {
 
 	opts := &podInfoOptions{}
 	podInfo := &cobra.Command{

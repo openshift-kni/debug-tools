@@ -14,7 +14,7 @@
  * Copyright 2020 Red Hat, Inc.
  */
 
-package cmd
+package knit
 
 import (
 	"encoding/json"
@@ -25,8 +25,9 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/openshift-kni/debug-tools/pkg/procs"
 	cpuset "k8s.io/utils/cpuset"
+
+	"github.com/openshift-kni/debug-tools/pkg/procs"
 )
 
 type cpuAffOptions struct {

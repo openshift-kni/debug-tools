@@ -24,7 +24,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/openshift-kni/debug-tools/pkg/knit/cmd"
+	"github.com/openshift-kni/debug-tools/internal/cli/knit"
 	goethtool "github.com/safchain/ethtool"
 )
 
@@ -33,7 +33,7 @@ type ethtoolOptions struct {
 	showChannels bool
 }
 
-func NewEthtoolCommand(knitOpts *cmd.KnitOptions) *cobra.Command {
+func NewEthtoolCommand(knitOpts *knit.KnitOptions) *cobra.Command {
 	opts := &ethtoolOptions{}
 	eInfo := &cobra.Command{
 		Use:   "ethtool",
@@ -48,7 +48,7 @@ func NewEthtoolCommand(knitOpts *cmd.KnitOptions) *cobra.Command {
 	return eInfo
 }
 
-func showEthtool(cmd *cobra.Command, knitOpts *cmd.KnitOptions, opts *ethtoolOptions, args []string) error {
+func showEthtool(cmd *cobra.Command, knitOpts *knit.KnitOptions, opts *ethtoolOptions, args []string) error {
 	var err error
 	ifaces := args
 	if len(ifaces) == 0 {

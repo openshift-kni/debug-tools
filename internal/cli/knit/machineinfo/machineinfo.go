@@ -21,7 +21,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/openshift-kni/debug-tools/pkg/knit/cmd"
+	"github.com/openshift-kni/debug-tools/internal/cli/knit"
 	"github.com/openshift-kni/debug-tools/pkg/machineinformer"
 )
 
@@ -29,7 +29,7 @@ type machineInfoOptions struct {
 	handle machineinformer.Handle
 }
 
-func NewMachineInfoCommand(knitOpts *cmd.KnitOptions) *cobra.Command {
+func NewMachineInfoCommand(knitOpts *knit.KnitOptions) *cobra.Command {
 	opts := &machineInfoOptions{
 		handle: machineinformer.Handle{
 			Out: os.Stdout,

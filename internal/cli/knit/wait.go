@@ -14,7 +14,7 @@
  * Copyright 2020 Red Hat, Inc.
  */
 
-package cmd
+package knit
 
 import (
 	"io/ioutil"

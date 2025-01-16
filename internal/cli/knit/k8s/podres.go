@@ -23,10 +23,12 @@ import (
 	"os"
 	"time"
 
-	kube "github.com/openshift-kni/debug-tools/pkg/k8s_imported"
-	"github.com/openshift-kni/debug-tools/pkg/knit/cmd"
 	"github.com/spf13/cobra"
+
 	kubeletpodresourcesv1 "k8s.io/kubelet/pkg/apis/podresources/v1"
+
+	"github.com/openshift-kni/debug-tools/internal/cli/knit"
+	kube "github.com/openshift-kni/debug-tools/pkg/k8s_imported"
 )
 
 // see k/k/test/e2e_node/util.go
@@ -47,7 +49,7 @@ type podResOptions struct {
 	socketPath string
 }
 
-func NewPodResourcesCommand(knitOpts *cmd.KnitOptions) *cobra.Command {
+func NewPodResourcesCommand(knitOpts *knit.KnitOptions) *cobra.Command {
 	opts := &podResOptions{}
 	podRes := &cobra.Command{
 		Use:   "podres",
