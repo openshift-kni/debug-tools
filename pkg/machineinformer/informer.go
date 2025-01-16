@@ -21,9 +21,10 @@ import (
 	"io"
 	"time"
 
+	"k8s.io/klog/v2"
+
 	infov1 "github.com/google/cadvisor/info/v1"
 	"github.com/google/cadvisor/machine"
-	"k8s.io/klog/v2"
 )
 
 type Handle struct {
