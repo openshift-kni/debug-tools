@@ -59,8 +59,8 @@ func NewRootCommand(env *environ.Environ, extraCmds ...NewCommandFunc) *cobra.Co
 		SilenceErrors: true,
 	}
 
-	root.PersistentFlags().BoolVarP(&opts.SleepForever, "sleepforever", "S", false, "run and sleep forever after executing the command")
-	root.PersistentFlags().IntVarP(&opts.Verbose, "verbose", "v", 0, "log verbosity")
+	root.PersistentFlags().BoolVar(&opts.SleepForever, "sleepforever", false, "run and sleep forever after executing the command")
+	root.PersistentFlags().IntVar(&opts.Verbose, "verbose", 0, "log verbosity")
 
 	root.AddCommand(
 		NewAlignCommand(env, &opts),
