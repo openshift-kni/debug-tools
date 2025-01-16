@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package cli
+package ctrreschk
 
 import (
 	"encoding/json"

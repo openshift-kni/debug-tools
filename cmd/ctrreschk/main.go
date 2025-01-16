@@ -20,12 +20,13 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/openshift-kni/debug-tools/internal/cli"
+	"github.com/openshift-kni/debug-tools/internal/cli/ctrreschk"
+
 	"github.com/openshift-kni/debug-tools/pkg/environ"
 )
 
 func main() {
-	root := cli.NewRootCommand(environ.New())
+	root := ctrreschk.NewRootCommand(environ.New())
 	if err := root.Execute(); err != nil {
 		fmt.Fprintf(os.Stderr, "%v\n", err)
 		os.Exit(1)
