@@ -26,7 +26,7 @@ import (
 	"github.com/jaypipes/ghw/pkg/pci"
 	"github.com/jaypipes/ghw/pkg/topology"
 
-	"github.com/openshift-kni/debug-tools/internal/cli/knit"
+	"github.com/openshift-kni/debug-tools/pkg/cli/knit"
 )
 
 func NewLstopoCommand(knitOpts *knit.KnitOptions) *cobra.Command {

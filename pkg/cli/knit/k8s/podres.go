@@ -27,7 +27,7 @@ import (
 
 	kubeletpodresourcesv1 "k8s.io/kubelet/pkg/apis/podresources/v1"
 
-	"github.com/openshift-kni/debug-tools/internal/cli/knit"
+	"github.com/openshift-kni/debug-tools/pkg/cli/knit"
 	kube "github.com/openshift-kni/debug-tools/pkg/k8s_imported"
 )
 

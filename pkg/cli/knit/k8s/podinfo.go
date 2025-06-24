@@ -29,7 +29,7 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 
-	"github.com/openshift-kni/debug-tools/internal/cli/knit"
+	"github.com/openshift-kni/debug-tools/pkg/cli/knit"
 	"github.com/spf13/cobra"
 )
 
