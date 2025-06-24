@@ -20,11 +20,11 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/openshift-kni/debug-tools/internal/cli/knit"
-	"github.com/openshift-kni/debug-tools/internal/cli/knit/ethtool"
-	"github.com/openshift-kni/debug-tools/internal/cli/knit/ghw"
-	"github.com/openshift-kni/debug-tools/internal/cli/knit/k8s"
-	"github.com/openshift-kni/debug-tools/internal/cli/knit/machineinfo"
+	"github.com/openshift-kni/debug-tools/pkg/cli/knit"
+	"github.com/openshift-kni/debug-tools/pkg/cli/knit/ethtool"
+	"github.com/openshift-kni/debug-tools/pkg/cli/knit/ghw"
+	"github.com/openshift-kni/debug-tools/pkg/cli/knit/k8s"
+	"github.com/openshift-kni/debug-tools/pkg/cli/knit/machineinfo"
 )
 
 func main() {

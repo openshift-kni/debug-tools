@@ -24,7 +24,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/openshift-kni/debug-tools/internal/cli/knit"
+	"github.com/openshift-kni/debug-tools/pkg/cli/knit"
 	goethtool "github.com/safchain/ethtool"
 )
 
