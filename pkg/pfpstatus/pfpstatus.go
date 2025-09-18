@@ -19,11 +19,15 @@ package pfpstatus
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"os"
+	"strconv"
 	"sync"
 	"time"
 
 	"github.com/go-logr/logr"
+
+	"k8s.io/client-go/kubernetes"
 
 	"github.com/k8stopologyawareschedwg/podfingerprint"
 
@@ -32,9 +36,12 @@ import (
 
 const (
 	PFPStatusDumpEnvVar string = "PFP_STATUS_DUMP"
+	PFPStatusHostEnvVar string = "PFP_STATUS_HOST"
+	PFPStatusPortEnvVar string = "PFP_STATUS_PORT"
 )
 
 const (
+	DefaultHTTPServePort int    = 33445
 	DefaultDumpDirectory string = "/run/pfpstatus"
 )
 
@@ -44,6 +51,18 @@ const (
 	defaultDumpPeriod        = 10 * time.Second
 )
 
+type Middleware struct {
+	Name string
+	Link func(http.Handler) http.Handler
+}
+
+type HTTPParams struct {
+	Enabled     bool
+	Host        string
+	Port        int
+	Middlewares []Middleware
+}
+
 type StorageParams struct {
 	Enabled   bool
 	Directory string
@@ -51,6 +70,7 @@ type StorageParams struct {
 }
 
 type Params struct {
+	HTTP    HTTPParams
 	Storage StorageParams
 }
 
@@ -58,10 +78,16 @@ type environ struct {
 	mu  sync.Mutex
 	rec *record.Recorder
 	lh  logr.Logger
+	cs  kubernetes.Interface
 }
 
 func DefaultParams() Params {
 	return Params{
+		HTTP: HTTPParams{
+			Enabled: true,
+			Host:    "", // all interfaces
+			Port:    DefaultHTTPServePort,
+		},
 		Storage: StorageParams{
 			Enabled:   false,
 			Directory: DefaultDumpDirectory,
@@ -85,10 +111,32 @@ func ParamsFromEnv(lh logr.Logger, params *Params) {
 		lh.Info("base directory not found, will discard everything", "baseDirectory", dumpDir)
 		params.Storage.Enabled = false
 	}
+
+	dumpPort, ok := os.LookupEnv(PFPStatusPortEnvVar)
+
+	if !ok || dumpPort == "" {
+		params.HTTP.Enabled = false
+	} else {
+		port, err := strconv.Atoi(dumpPort)
+		if err != nil {
+			lh.Error(err, "parsing dump port %q", dumpPort)
+			params.HTTP.Enabled = false
+		} else {
+			params.HTTP.Enabled = true
+			params.HTTP.Port = port
+		}
+	}
+
+	// the port setting is deemed more important than the host setting;
+	// we don't control the enable toggle from the host, by design.
+	dumpHost, ok := os.LookupEnv(PFPStatusHostEnvVar)
+	if ok && params.HTTP.Enabled {
+		params.HTTP.Host = dumpHost
+	}
 }
 
 func Setup(logh logr.Logger, params Params) {
-	if !params.Storage.Enabled {
+	if !params.Storage.Enabled && !params.HTTP.Enabled {
 		logh.Info("no backend enabled, nothing to do")
 		return
 	}
@@ -112,6 +160,9 @@ func Setup(logh logr.Logger, params Params) {
 	go collectLoop(ctx, &env, ch)
 	if params.Storage.Enabled {
 		go dumpLoop(ctx, &env, params.Storage)
+	}
+	if params.HTTP.Enabled {
+		go serveLoop(ctx, &env, params.HTTP)
 	}
 }
 
