@@ -10,6 +10,7 @@ require (
 	github.com/google/cadvisor v0.52.1
 	github.com/google/go-cmp v0.6.0
 	github.com/jaypipes/ghw v0.12.0
+	github.com/k8stopologyawareschedwg/podfingerprint v0.2.3
 	github.com/onsi/ginkgo v1.14.0
 	github.com/onsi/gomega v1.35.1
 	github.com/safchain/ethtool v0.3.0
@@ -33,6 +34,7 @@ require (
 )
 
 require (
+	github.com/OneOfOne/xxhash v1.2.8 // indirect
 	github.com/StackExchange/wmi v1.2.1 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/emicklei/go-restful/v3 v3.11.0 // indirect
