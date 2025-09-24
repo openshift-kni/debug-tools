@@ -44,6 +44,12 @@ func WithPFPCoalescing(val bool) Option {
 	}
 }
 
+func WithMaxSizePerNode(maxSize int) Option {
+	return func(rr *Recorder) {
+		rr.maxSize = maxSize
+	}
+}
+
 type NodeOption func(*NodeRecorder)
 
 func WithCapacity(capacity int) NodeOption {
@@ -61,5 +67,11 @@ func WithTimestamper(tsr func() time.Time) NodeOption {
 func WithCoalescing(val bool) NodeOption {
 	return func(nr *NodeRecorder) {
 		nr.coalesceLast = val
+	}
+}
+
+func WithMaxSize(maxSize int) NodeOption {
+	return func(nr *NodeRecorder) {
+		nr.maxSize = maxSize
 	}
 }

@@ -18,6 +18,8 @@ package record
 
 import (
 	"errors"
+	"fmt"
+	"io"
 	"time"
 
 	"github.com/k8stopologyawareschedwg/podfingerprint"
@@ -40,6 +42,13 @@ type RecordedStatus struct {
 	podfingerprint.Status
 	// RecordTime is a timestamp of when the RecordedStatus was added to the record
 	RecordTime time.Time `json:"recordTime"`
+	// statusSize is approximate size of the string representation of the status in bytes
+	statusSize int `json:"-"`
+}
+
+func (rs RecordedStatus) Size() int {
+	byteCount, _ := fmt.Fprint(io.Discard, fmt.Sprintf("%+v\n%+v", rs.Pods, rs.RecordTime))
+	return byteCount
 }
 
 func (rs RecordedStatus) Equal(x RecordedStatus) bool {
@@ -55,6 +64,8 @@ type NodeRecorder struct {
 	timestamper  func() time.Time
 	nodeName     string // shortcut
 	capacity     int
+	maxSize      int
+	size         int
 	statuses     []RecordedStatus
 	coalesceLast bool
 }
@@ -88,14 +99,27 @@ func (nr *NodeRecorder) dropOldest() {
 	if nr.Len() < 1 {
 		return
 	}
+	nr.size -= nr.statuses[0].Size()
 	nr.statuses = nr.statuses[1:]
 }
 
-func (nr *NodeRecorder) makeRoom() {
-	if nr.Len() < nr.Cap() {
+func (nr *NodeRecorder) makeRoom(size int) {
+	if nr.capacity > 1 && nr.Len() == nr.Cap() {
+		nr.dropOldest()
+	}
+	if nr.maxSize == 0 {
 		return
 	}
-	nr.dropOldest()
+
+	if size >= nr.maxSize {
+		nr.size = 0
+		nr.statuses = []RecordedStatus{}
+		return
+	}
+
+	for (nr.size + size) > nr.maxSize {
+		nr.dropOldest()
+	}
 }
 
 // Push adds a new Status to the record, evicting the oldest Status if necessary.
@@ -119,15 +143,19 @@ func (nr *NodeRecorder) Push(st podfingerprint.Status) error {
 	}
 
 	item := RecordedStatus{
-		Status:     st.Clone(),
+		Status:     st,
 		RecordTime: ts,
 	}
+	item.statusSize = item.Size()
 	if nr.capacity == 1 { // handle common special case, avoid any resize
 		nr.statuses[0] = item
+		nr.size = item.Size()
+		// no maxSize constraint required
 		return nil
 	}
-	nr.makeRoom()
+	nr.makeRoom(item.statusSize)
 	nr.statuses = append(nr.statuses, item)
+	nr.size += item.Size()
 	return nil
 }
 
@@ -151,12 +179,18 @@ func (nr *NodeRecorder) IsCoalescing() bool {
 	return nr.coalesceLast
 }
 
+// MaxSize returns the maximum size allowed for nr
+func (nr *NodeRecorder) MaxSize() int {
+	return nr.maxSize
+}
+
 // Recorder stores all the recorded statuses, dividing them by node name.
 // There is a hard cap of how many nodes are managed, and how many Statuses are recorded per node.
 type Recorder struct {
 	nodes        map[string]*NodeRecorder
 	nodeCapacity int
 	maxNodes     int
+	maxSize      int
 	timestamper  Timestamper
 	coalesceLast bool
 }
@@ -186,7 +220,7 @@ func NewRecorder(opts ...Option) (*Recorder, error) {
 	return &rec, nil
 }
 
-// Cap returns the maximum nodes allowed in this Recorder
+// MaxNodes returns the maximum nodes allowed in this Recorder
 func (rr *Recorder) MaxNodes() int {
 	return rr.maxNodes
 }
@@ -224,6 +258,11 @@ func (rr *Recorder) IsCoalescing() bool {
 	return rr.coalesceLast
 }
 
+// MaxSize returns the maximum size allowed per NodeRecorder in rr
+func (rr *Recorder) MaxSize() int {
+	return rr.maxSize
+}
+
 // Push adds a new Status to the record for its node, evicting the oldest Status
 // belonging to the same node if necessary.
 // Per-node records are created lazily as needed, up to the configured maximum.
@@ -243,7 +282,7 @@ func (rr *Recorder) Push(st podfingerprint.Status) error {
 	}
 
 	if !ok {
-		nr, err = NewNodeRecorder(st.NodeName, WithTimestamper(rr.timestamper), WithCapacity(rr.nodeCapacity), WithCoalescing(rr.coalesceLast))
+		nr, err = NewNodeRecorder(st.NodeName, WithTimestamper(rr.timestamper), WithCapacity(rr.nodeCapacity), WithMaxSize(rr.maxSize), WithCoalescing(rr.coalesceLast))
 		if err != nil {
 			return err
 		}
