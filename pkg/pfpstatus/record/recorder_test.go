@@ -353,3 +353,43 @@ func TestRecorderPushMultipleNodesContentUnknownForNode(t *testing.T) {
 		t.Fatalf("unexpected status count for %q", "node-99")
 	}
 }
+
+func TestRecorderMultiPushSingleNode(t *testing.T) {
+	rr, err := NewRecorder(1, 5, time.Now)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	for i := 0; i < 5; i++ {
+		if err := rr.Push(podfingerprint.Status{
+			NodeName: "node-0",
+		}); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+	}
+	if rr.CountNodes() != 1 {
+		t.Fatalf("unexpected node count")
+	}
+	if rr.CountRecords("node-0") != 5 {
+		t.Fatalf("unexpected status count for %q", "node-0")
+	}
+}
+
+func TestRecorderMultiPushMultipleNodes(t *testing.T) {
+	rr, err := NewRecorder(2, 5, time.Now)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	for i := 0; i < 10; i++ {
+		if err := rr.Push(podfingerprint.Status{
+			NodeName: fmt.Sprintf("node-%d", i%2),
+		}); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+	}
+	if rr.CountNodes() != 2 {
+		t.Fatalf("unexpected node count")
+	}
+	if rr.CountRecords("node-0") != 5 {
+		t.Fatalf("unexpected status count for %q", "node-0")
+	}
+}

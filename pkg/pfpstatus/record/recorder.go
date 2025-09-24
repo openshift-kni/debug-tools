@@ -194,11 +194,14 @@ func (rr *Recorder) Push(st podfingerprint.Status) error {
 	if st.NodeName == "" {
 		return ErrMissingNode
 	}
-	if len(rr.nodes) >= rr.maxNodes {
-		return ErrTooManyNodes
-	}
+
 	var err error
 	nr, ok := rr.nodes[st.NodeName]
+
+	if !ok && rr.maxCapacityReached() {
+		return ErrTooManyNodes
+	}
+
 	if !ok {
 		nr, err = NewNodeRecorder(st.NodeName, rr.nodeCapacity, rr.timestamper)
 		if err != nil {
@@ -226,4 +229,8 @@ func (rr *Recorder) ContentForNode(nodeName string) ([]RecordedStatus, bool) {
 		return []RecordedStatus{}, false
 	}
 	return nr.Content(), true
+}
+
+func (rr *Recorder) maxCapacityReached() bool {
+	return len(rr.nodes) >= rr.maxNodes
 }
