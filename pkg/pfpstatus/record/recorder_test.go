@@ -26,7 +26,7 @@ import (
 )
 
 func TestNodeRecorderCreate(t *testing.T) {
-	nr, err := NewNodeRecorder("test-node", 16, time.Now)
+	nr, err := NewNodeRecorder("test-node", time.Now, WithCapacity(16))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -40,7 +40,7 @@ func TestNodeRecorderCreate(t *testing.T) {
 }
 
 func TestNodeRecorderCreateInvalid(t *testing.T) {
-	_, err := NewNodeRecorder("test-node", 0, time.Now)
+	_, err := NewNodeRecorder("test-node", time.Now)
 	if err == nil {
 		t.Fatalf("unexpected success")
 	}
@@ -50,7 +50,7 @@ func TestNodeRecorderCreateInvalid(t *testing.T) {
 }
 
 func TestNodeRecorderPushMissingNodeName(t *testing.T) {
-	nr, err := NewNodeRecorder("test-node", 16, time.Now)
+	nr, err := NewNodeRecorder("test-node", time.Now, WithCapacity(16))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -66,7 +66,7 @@ func TestNodeRecorderPushMissingNodeName(t *testing.T) {
 }
 
 func TestNodeRecorderPushMismatchingNodeName(t *testing.T) {
-	nr, err := NewNodeRecorder("test-node", 16, time.Now)
+	nr, err := NewNodeRecorder("test-node", time.Now, WithCapacity(16))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -82,7 +82,7 @@ func TestNodeRecorderPushMismatchingNodeName(t *testing.T) {
 }
 
 func TestNodeRecorderPushBasic(t *testing.T) {
-	nr, err := NewNodeRecorder("test-node", 16, time.Now)
+	nr, err := NewNodeRecorder("test-node", time.Now, WithCapacity(16))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -98,7 +98,7 @@ func TestNodeRecorderPushBasic(t *testing.T) {
 }
 
 func TestNodeRecorderSingleEntryPushEvict(t *testing.T) {
-	nr, err := NewNodeRecorder("test-node", 1, time.Now)
+	nr, err := NewNodeRecorder("test-node", time.Now, WithCapacity(1))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -132,7 +132,7 @@ func TestNodeRecorderSingleEntryPushEvict(t *testing.T) {
 }
 
 func TestNodeRecorderMultiEntryPushContentEvict(t *testing.T) {
-	nr, err := NewNodeRecorder("test-node", 3, time.Now)
+	nr, err := NewNodeRecorder("test-node", time.Now, WithCapacity(3))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

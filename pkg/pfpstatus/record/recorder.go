@@ -54,27 +54,51 @@ type NodeRecorder struct {
 	statuses    []RecordedStatus
 }
 
+type NodeOption func(*NodeRecorder)
+
+func WithCapacity(capacity int) NodeOption {
+	return func(nr *NodeRecorder) {
+		nr.capacity = capacity
+	}
+}
+
 // NewNodeRecorder creates a new recorder for the given node with the given capacity.
 // The record is a ring buffer, so only the latest <capacity> Statuses are kept at any time.
 // The timestamper callback is used to mark times. Use `time.Now` if unsure.
 // Returns the newly created instance; if parameters are incorrect, returns an error, on which
 // case the returned instance should be ignored.
-func NewNodeRecorder(nodeName string, capacity int, timestamper Timestamper) (*NodeRecorder, error) {
+func NewNodeRecorder(nodeName string, timestamper Timestamper, opts ...NodeOption) (*NodeRecorder, error) {
 	if nodeName == "" {
 		return nil, ErrMissingNode
-	}
-	if capacity < 1 {
-		return nil, ErrInvalidCapacity
 	}
 	nr := NodeRecorder{
 		timestamper: timestamper,
 		nodeName:    nodeName,
-		capacity:    capacity,
 	}
-	if capacity == 1 { // handle common special case
+	for _, opt := range opts {
+		opt(&nr)
+	}
+	if nr.capacity < 1 {
+		return nil, ErrInvalidCapacity
+	}
+	if nr.capacity == 1 { // handle common special case
 		nr.statuses = make([]RecordedStatus, 1)
 	}
 	return &nr, nil
+}
+
+func (nr *NodeRecorder) dropOldest() {
+	if nr.Len() < 1 {
+		return
+	}
+	nr.statuses = nr.statuses[1:]
+}
+
+func (nr *NodeRecorder) makeRoom() {
+	if nr.Len() < nr.Cap() {
+		return
+	}
+	nr.dropOldest()
 }
 
 // Push adds a new Status to the record, evicting the oldest Status if necessary.
@@ -88,21 +112,17 @@ func (nr *NodeRecorder) Push(st podfingerprint.Status) error {
 	if st.NodeName != nr.nodeName {
 		return ErrMismatchingNode
 	}
+	ts := nr.timestamper()
+	item := RecordedStatus{
+		Status:     st.Clone(),
+		RecordTime: ts,
+	}
 	if nr.capacity == 1 { // handle common special case, avoid any resize
-		nr.statuses[0] = RecordedStatus{
-			Status:     st.Clone(),
-			RecordTime: nr.timestamper(),
-		}
+		nr.statuses[0] = item
 		return nil
 	}
-	if nr.Len() == nr.Cap() {
-		// drop the older sample
-		nr.statuses = nr.statuses[1:]
-	}
-	nr.statuses = append(nr.statuses, RecordedStatus{
-		Status:     st.Clone(),
-		RecordTime: nr.timestamper(),
-	})
+	nr.makeRoom()
+	nr.statuses = append(nr.statuses, item)
 	return nil
 }
 
@@ -203,7 +223,7 @@ func (rr *Recorder) Push(st podfingerprint.Status) error {
 	}
 
 	if !ok {
-		nr, err = NewNodeRecorder(st.NodeName, rr.nodeCapacity, rr.timestamper)
+		nr, err = NewNodeRecorder(st.NodeName, rr.timestamper, WithCapacity(rr.nodeCapacity))
 		if err != nil {
 			return err
 		}
