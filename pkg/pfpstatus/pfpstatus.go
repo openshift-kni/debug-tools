@@ -95,7 +95,7 @@ func Setup(logh logr.Logger, params Params) {
 
 	logh.Info("Setup in progress", "params", fmt.Sprintf("%+#v", params))
 
-	rec, err := record.NewRecorder(defaultMaxNodes, defaultMaxSamplesPerNode, time.Now)
+	rec, err := record.NewRecorder(record.WithMaxNodes(defaultMaxNodes), record.WithNodeCapacity(defaultMaxSamplesPerNode))
 	if err != nil {
 		logh.Error(err, "cannot create a status recorder")
 		return
