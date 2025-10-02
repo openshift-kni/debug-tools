@@ -23,6 +23,10 @@ import (
 	"github.com/k8stopologyawareschedwg/podfingerprint"
 )
 
+const (
+	DefaultMaxNodes = 1023
+)
+
 var (
 	ErrInvalidCapacity  = errors.New("invalid capacity")
 	ErrInvalidNodeCount = errors.New("invalid node count")
@@ -62,17 +66,23 @@ func WithCapacity(capacity int) NodeOption {
 	}
 }
 
+func WithTimestamper(tsr func() time.Time) NodeOption {
+	return func(nr *NodeRecorder) {
+		nr.timestamper = tsr
+	}
+}
+
 // NewNodeRecorder creates a new recorder for the given node with the given capacity.
 // The record is a ring buffer, so only the latest <capacity> Statuses are kept at any time.
 // The timestamper callback is used to mark times. Use `time.Now` if unsure.
 // Returns the newly created instance; if parameters are incorrect, returns an error, on which
 // case the returned instance should be ignored.
-func NewNodeRecorder(nodeName string, timestamper Timestamper, opts ...NodeOption) (*NodeRecorder, error) {
+func NewNodeRecorder(nodeName string, opts ...NodeOption) (*NodeRecorder, error) {
 	if nodeName == "" {
 		return nil, ErrMissingNode
 	}
 	nr := NodeRecorder{
-		timestamper: timestamper,
+		timestamper: time.Now,
 		nodeName:    nodeName,
 	}
 	for _, opt := range opts {
@@ -150,25 +160,49 @@ type Recorder struct {
 	timestamper  Timestamper
 }
 
+type Option func(*Recorder)
+
+func WithNodeCapacity(nodeCapacity int) Option {
+	return func(rec *Recorder) {
+		rec.nodeCapacity = nodeCapacity
+	}
+}
+
+func WithNodeTimestamper(tsr func() time.Time) Option {
+	return func(rec *Recorder) {
+		rec.timestamper = tsr
+	}
+}
+
+func WithMaxNodes(maxNodes int) Option {
+	return func(rec *Recorder) {
+		rec.maxNodes = maxNodes
+	}
+}
+
 // NewRecorder creates a new recorder up to the given node count, each with the given capacity.
 // Each per-node recorder is a ring buffer, so only the latest <nodeCapacity> Statuses are kept
 // at any time for each node. The per-node records are created lazily as needed.
 // The timestamper callback is used to mark times. Use `time.Now` if unsure.
 // Returns the newly created instance; if parameters are incorrect, returns an error, on which
 // case the returned instance should be ignored.
-func NewRecorder(maxNodes, nodeCapacity int, timestamper Timestamper) (*Recorder, error) {
-	if maxNodes < 1 {
+func NewRecorder(opts ...Option) (*Recorder, error) {
+	rec := Recorder{
+		nodes:        make(map[string]*NodeRecorder),
+		timestamper:  time.Now,
+		maxNodes:     DefaultMaxNodes,
+		nodeCapacity: 1,
+	}
+	for _, opt := range opts {
+		opt(&rec)
+	}
+	if rec.maxNodes < 1 {
 		return nil, ErrInvalidNodeCount
 	}
-	if nodeCapacity < 1 {
+	if rec.nodeCapacity < 1 {
 		return nil, ErrInvalidCapacity
 	}
-	return &Recorder{
-		nodes:        make(map[string]*NodeRecorder),
-		nodeCapacity: nodeCapacity,
-		maxNodes:     maxNodes,
-		timestamper:  timestamper,
-	}, nil
+	return &rec, nil
 }
 
 // Cap returns the maximum nodes allowed in this Recorder
@@ -223,7 +257,7 @@ func (rr *Recorder) Push(st podfingerprint.Status) error {
 	}
 
 	if !ok {
-		nr, err = NewNodeRecorder(st.NodeName, rr.timestamper, WithCapacity(rr.nodeCapacity))
+		nr, err = NewNodeRecorder(st.NodeName, WithTimestamper(rr.timestamper), WithCapacity(rr.nodeCapacity))
 		if err != nil {
 			return err
 		}

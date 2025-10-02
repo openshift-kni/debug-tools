@@ -20,13 +20,12 @@ import (
 	"errors"
 	"fmt"
 	"testing"
-	"time"
 
 	"github.com/k8stopologyawareschedwg/podfingerprint"
 )
 
 func TestNodeRecorderCreate(t *testing.T) {
-	nr, err := NewNodeRecorder("test-node", time.Now, WithCapacity(16))
+	nr, err := NewNodeRecorder("test-node", WithCapacity(16))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -40,7 +39,7 @@ func TestNodeRecorderCreate(t *testing.T) {
 }
 
 func TestNodeRecorderCreateInvalid(t *testing.T) {
-	_, err := NewNodeRecorder("test-node", time.Now)
+	_, err := NewNodeRecorder("test-node")
 	if err == nil {
 		t.Fatalf("unexpected success")
 	}
@@ -50,7 +49,7 @@ func TestNodeRecorderCreateInvalid(t *testing.T) {
 }
 
 func TestNodeRecorderPushMissingNodeName(t *testing.T) {
-	nr, err := NewNodeRecorder("test-node", time.Now, WithCapacity(16))
+	nr, err := NewNodeRecorder("test-node", WithCapacity(16))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -66,7 +65,7 @@ func TestNodeRecorderPushMissingNodeName(t *testing.T) {
 }
 
 func TestNodeRecorderPushMismatchingNodeName(t *testing.T) {
-	nr, err := NewNodeRecorder("test-node", time.Now, WithCapacity(16))
+	nr, err := NewNodeRecorder("test-node", WithCapacity(16))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -82,7 +81,7 @@ func TestNodeRecorderPushMismatchingNodeName(t *testing.T) {
 }
 
 func TestNodeRecorderPushBasic(t *testing.T) {
-	nr, err := NewNodeRecorder("test-node", time.Now, WithCapacity(16))
+	nr, err := NewNodeRecorder("test-node", WithCapacity(16))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -98,7 +97,7 @@ func TestNodeRecorderPushBasic(t *testing.T) {
 }
 
 func TestNodeRecorderSingleEntryPushEvict(t *testing.T) {
-	nr, err := NewNodeRecorder("test-node", time.Now, WithCapacity(1))
+	nr, err := NewNodeRecorder("test-node", WithCapacity(1))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -132,7 +131,7 @@ func TestNodeRecorderSingleEntryPushEvict(t *testing.T) {
 }
 
 func TestNodeRecorderMultiEntryPushContentEvict(t *testing.T) {
-	nr, err := NewNodeRecorder("test-node", time.Now, WithCapacity(3))
+	nr, err := NewNodeRecorder("test-node", WithCapacity(3))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -168,7 +167,7 @@ func TestNodeRecorderMultiEntryPushContentEvict(t *testing.T) {
 }
 
 func TestRecorderCreate(t *testing.T) {
-	rr, err := NewRecorder(8, 16, time.Now)
+	rr, err := NewRecorder(WithMaxNodes(8), WithNodeCapacity(16))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -189,7 +188,7 @@ func TestRecorderCreate(t *testing.T) {
 }
 
 func TestRecorderCreateInvalid(t *testing.T) {
-	_, err := NewRecorder(8, 0, time.Now)
+	_, err := NewRecorder(WithMaxNodes(8), WithNodeCapacity(0))
 	if err == nil {
 		t.Fatalf("unexpected success")
 	}
@@ -197,7 +196,7 @@ func TestRecorderCreateInvalid(t *testing.T) {
 		t.Errorf("unexpected error: %v %T", err, err)
 	}
 
-	_, err = NewRecorder(0, 32, time.Now)
+	_, err = NewRecorder(WithMaxNodes(0), WithNodeCapacity(32))
 	if err == nil {
 		t.Fatalf("unexpected success")
 	}
@@ -208,7 +207,7 @@ func TestRecorderCreateInvalid(t *testing.T) {
 }
 
 func TestRecorderPushMissingNodeName(t *testing.T) {
-	rr, err := NewRecorder(8, 16, time.Now)
+	rr, err := NewRecorder(WithMaxNodes(8), WithNodeCapacity(16))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -224,7 +223,7 @@ func TestRecorderPushMissingNodeName(t *testing.T) {
 }
 
 func TestRecorderPushTooManyNodes(t *testing.T) {
-	rr, err := NewRecorder(1, 16, time.Now)
+	rr, err := NewRecorder(WithMaxNodes(1), WithNodeCapacity(16))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -260,7 +259,7 @@ func TestRecorderPushTooManyNodes(t *testing.T) {
 }
 
 func TestRecorderPushMultipleNodes(t *testing.T) {
-	rr, err := NewRecorder(8, 16, time.Now)
+	rr, err := NewRecorder(WithMaxNodes(8), WithNodeCapacity(16))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -286,7 +285,7 @@ func TestRecorderPushMultipleNodes(t *testing.T) {
 }
 
 func TestRecorderPushMultipleNodesContent(t *testing.T) {
-	rr, err := NewRecorder(8, 16, time.Now)
+	rr, err := NewRecorder(WithMaxNodes(8), WithNodeCapacity(16))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -334,7 +333,7 @@ func TestRecorderPushMultipleNodesContent(t *testing.T) {
 }
 
 func TestRecorderPushMultipleNodesContentUnknownForNode(t *testing.T) {
-	rr, err := NewRecorder(8, 16, time.Now)
+	rr, err := NewRecorder(WithMaxNodes(8), WithNodeCapacity(16))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -355,7 +354,7 @@ func TestRecorderPushMultipleNodesContentUnknownForNode(t *testing.T) {
 }
 
 func TestRecorderMultiPushSingleNode(t *testing.T) {
-	rr, err := NewRecorder(1, 5, time.Now)
+	rr, err := NewRecorder(WithMaxNodes(1), WithNodeCapacity(5))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -375,7 +374,7 @@ func TestRecorderMultiPushSingleNode(t *testing.T) {
 }
 
 func TestRecorderMultiPushMultipleNodes(t *testing.T) {
-	rr, err := NewRecorder(2, 5, time.Now)
+	rr, err := NewRecorder(WithMaxNodes(2), WithNodeCapacity(5))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
