@@ -48,10 +48,11 @@ type Timestamper func() time.Time
 // NodeRecorder stores all the recorded statuses for a given node name.
 // Statuses belonging to different nodes won't be accepted.
 type NodeRecorder struct {
-	timestamper func() time.Time
-	nodeName    string // shortcut
-	capacity    int
-	statuses    []RecordedStatus
+	timestamper  func() time.Time
+	nodeName     string // shortcut
+	capacity     int
+	statuses     []RecordedStatus
+	coalesceLast bool
 }
 
 type NodeOption func(*NodeRecorder)
@@ -59,6 +60,12 @@ type NodeOption func(*NodeRecorder)
 func WithCapacity(capacity int) NodeOption {
 	return func(nr *NodeRecorder) {
 		nr.capacity = capacity
+	}
+}
+
+func WithCoalescing(val bool) NodeOption {
+	return func(nr *NodeRecorder) {
+		nr.coalesceLast = val
 	}
 }
 
@@ -113,6 +120,15 @@ func (nr *NodeRecorder) Push(st podfingerprint.Status) error {
 		return ErrMismatchingNode
 	}
 	ts := nr.timestamper()
+
+	if nr.IsCoalescing() && nr.Len() != 0 {
+		lastItem := nr.statuses[nr.Len()-1]
+		if lastItem.FingerprintComputed == st.FingerprintComputed && lastItem.FingerprintExpected == st.FingerprintExpected { // pod list should not change
+			nr.statuses[nr.Len()-1].RecordTime = ts
+			return nil
+		}
+	}
+
 	item := RecordedStatus{
 		Status:     st.Clone(),
 		RecordTime: ts,
@@ -141,6 +157,11 @@ func (nr *NodeRecorder) Content() []RecordedStatus {
 	return nr.statuses
 }
 
+// IsCoalescing returns true if the node recorder is configured to push statuses only if they are unique in PFPs
+func (nr *NodeRecorder) IsCoalescing() bool {
+	return nr.coalesceLast
+}
+
 // Recorder stores all the recorded statuses, dividing them by node name.
 // There is a hard cap of how many nodes are managed, and how many Statuses are recorded per node.
 type Recorder struct {
@@ -148,6 +169,15 @@ type Recorder struct {
 	nodeCapacity int
 	maxNodes     int
 	timestamper  Timestamper
+	coalesceLast bool
+}
+
+type RecorderOption func(*Recorder)
+
+func WithCoalescingRecorder(val bool) RecorderOption {
+	return func(rr *Recorder) {
+		rr.coalesceLast = val
+	}
 }
 
 // NewRecorder creates a new recorder up to the given node count, each with the given capacity.
@@ -156,19 +186,23 @@ type Recorder struct {
 // The timestamper callback is used to mark times. Use `time.Now` if unsure.
 // Returns the newly created instance; if parameters are incorrect, returns an error, on which
 // case the returned instance should be ignored.
-func NewRecorder(maxNodes, nodeCapacity int, timestamper Timestamper) (*Recorder, error) {
+func NewRecorder(maxNodes, nodeCapacity int, timestamper Timestamper, opts ...RecorderOption) (*Recorder, error) {
 	if maxNodes < 1 {
 		return nil, ErrInvalidNodeCount
 	}
 	if nodeCapacity < 1 {
 		return nil, ErrInvalidCapacity
 	}
-	return &Recorder{
+	rr := &Recorder{
 		nodes:        make(map[string]*NodeRecorder),
 		nodeCapacity: nodeCapacity,
 		maxNodes:     maxNodes,
 		timestamper:  timestamper,
-	}, nil
+	}
+	for _, opt := range opts {
+		opt(rr)
+	}
+	return rr, nil
 }
 
 // Cap returns the maximum nodes allowed in this Recorder
@@ -204,6 +238,11 @@ func (rr *Recorder) Len() int {
 	return tot
 }
 
+// IsCoalescing returns true if the recorder is configured to push statuses only if they are unique in PFPs
+func (rr *Recorder) IsCoalescing() bool {
+	return rr.coalesceLast
+}
+
 // Push adds a new Status to the record for its node, evicting the oldest Status
 // belonging to the same node if necessary.
 // Per-node records are created lazily as needed, up to the configured maximum.
@@ -223,7 +262,7 @@ func (rr *Recorder) Push(st podfingerprint.Status) error {
 	}
 
 	if !ok {
-		nr, err = NewNodeRecorder(st.NodeName, rr.timestamper, WithCapacity(rr.nodeCapacity))
+		nr, err = NewNodeRecorder(st.NodeName, rr.timestamper, WithCapacity(rr.nodeCapacity), WithCoalescing(rr.coalesceLast))
 		if err != nil {
 			return err
 		}
