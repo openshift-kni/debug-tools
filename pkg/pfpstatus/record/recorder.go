@@ -59,26 +59,6 @@ type NodeRecorder struct {
 	coalesceLast bool
 }
 
-type NodeOption func(*NodeRecorder)
-
-func WithCapacity(capacity int) NodeOption {
-	return func(nr *NodeRecorder) {
-		nr.capacity = capacity
-	}
-}
-
-func WithTimestamper(tsr func() time.Time) NodeOption {
-	return func(nr *NodeRecorder) {
-		nr.timestamper = tsr
-	}
-}
-
-func WithCoalescing(val bool) NodeOption {
-	return func(nr *NodeRecorder) {
-		nr.coalesceLast = val
-	}
-}
-
 // NewNodeRecorder creates a new recorder for the given node with the given capacity.
 // The record is a ring buffer, so only the latest <capacity> Statuses are kept at any time.
 // The timestamper callback is used to mark times. Use `time.Now` if unsure.
@@ -161,7 +141,7 @@ func (nr *NodeRecorder) Cap() int {
 	return nr.capacity
 }
 
-// Content() returns a shallow copy of all the recorded statuses.
+// Content returns a shallow copy of all the recorded statuses.
 func (nr *NodeRecorder) Content() []RecordedStatus {
 	return nr.statuses
 }
@@ -179,32 +159,6 @@ type Recorder struct {
 	maxNodes     int
 	timestamper  Timestamper
 	coalesceLast bool
-}
-
-type Option func(*Recorder)
-
-func WithNodeCapacity(nodeCapacity int) Option {
-	return func(rec *Recorder) {
-		rec.nodeCapacity = nodeCapacity
-	}
-}
-
-func WithNodeTimestamper(tsr func() time.Time) Option {
-	return func(rec *Recorder) {
-		rec.timestamper = tsr
-	}
-}
-
-func WithMaxNodes(maxNodes int) Option {
-	return func(rec *Recorder) {
-		rec.maxNodes = maxNodes
-	}
-}
-
-func WithPFPCoalescing(val bool) Option {
-	return func(rr *Recorder) {
-		rr.coalesceLast = val
-	}
 }
 
 // NewRecorder creates a new recorder up to the given node count, each with the given capacity.
@@ -298,7 +252,7 @@ func (rr *Recorder) Push(st podfingerprint.Status) error {
 	return nr.Push(st)
 }
 
-// Content() returns a shallow copy of all the recorded statuses, by node name.
+// Content returns a shallow copy of all the recorded statuses, by node name.
 func (rr *Recorder) Content() map[string][]RecordedStatus {
 	ret := make(map[string][]RecordedStatus, len(rr.nodes))
 	for nodeName, nr := range rr.nodes {
