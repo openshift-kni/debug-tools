@@ -45,9 +45,10 @@ const (
 )
 
 type StorageParams struct {
-	Enabled   bool
-	Directory string
-	Period    time.Duration
+	Enabled      bool
+	Directory    string
+	Period       time.Duration
+	CoalesceLast bool
 }
 
 type Params struct {
@@ -63,9 +64,10 @@ type environ struct {
 func DefaultParams() Params {
 	return Params{
 		Storage: StorageParams{
-			Enabled:   false,
-			Directory: DefaultDumpDirectory,
-			Period:    10 * time.Second,
+			Enabled:      false,
+			Directory:    DefaultDumpDirectory,
+			Period:       10 * time.Second,
+			CoalesceLast: false,
 		},
 	}
 }
@@ -95,7 +97,11 @@ func Setup(logh logr.Logger, params Params) {
 
 	logh.Info("Setup in progress", "params", fmt.Sprintf("%+#v", params))
 
-	rec, err := record.NewRecorder(record.WithMaxNodes(defaultMaxNodes), record.WithNodeCapacity(defaultMaxSamplesPerNode))
+	rec, err := record.NewRecorder(
+		record.WithMaxNodes(defaultMaxNodes),
+		record.WithNodeCapacity(defaultMaxSamplesPerNode),
+		record.WithPFPCoalescing(params.Storage.CoalesceLast),
+	)
 	if err != nil {
 		logh.Error(err, "cannot create a status recorder")
 		return

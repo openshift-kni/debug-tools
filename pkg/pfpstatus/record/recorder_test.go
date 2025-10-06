@@ -392,3 +392,52 @@ func TestRecorderMultiPushMultipleNodes(t *testing.T) {
 		t.Fatalf("unexpected status count for %q", "node-0")
 	}
 }
+
+func TestRecorderWithCoalescing(t *testing.T) {
+	rr, err := NewRecorder(WithMaxNodes(1), WithNodeCapacity(10), WithPFPCoalescing(true))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if rr.IsCoalescing() != true {
+		t.Fatalf("IsCoalescing should be true")
+	}
+
+	st := podfingerprint.Status{
+		FingerprintExpected: "pfp-exp-st1",
+		FingerprintComputed: "pfp-comp-st1",
+		NodeName:            "node-1",
+	}
+
+	rr.Push(st)
+	rs1 := rr.Content()["node-1"][0]
+	rr.Push(st)
+	rs2 := rr.Content()["node-1"][0]
+	if !rs2.RecordTime.Equal(rs1.RecordTime) {
+		t.Fatalf("RecordTime should not change, %v vs %v", rs2.RecordTime, rs1.RecordTime)
+	}
+	rr.Push(st)
+	rs3 := rr.Content()["node-1"][0]
+	if !rs3.RecordTime.Equal(rs1.RecordTime) {
+		t.Fatalf("RecordTime should not change, %v vs %v", rs3.RecordTime, rs1.RecordTime)
+	}
+
+	if rr.CountRecords("node-1") != 1 {
+		t.Fatalf("unexpected status count with WithCoalescing option set to true")
+	}
+
+	if rr.nodes["node-1"].IsCoalescing() != true {
+		t.Fatalf("unexpected status with WithCoalescing option set to true")
+	}
+
+	st.FingerprintExpected = "pfp-exp-st2"
+	rr.Push(st)
+	if rr.CountRecords("node-1") != 2 {
+		t.Fatalf("unexpected status count")
+	}
+
+	st.FingerprintComputed = "pfp-comp-st2"
+	rr.Push(st)
+	if rr.CountRecords("node-1") != 3 {
+		t.Fatalf("unexpected status count")
+	}
+}
