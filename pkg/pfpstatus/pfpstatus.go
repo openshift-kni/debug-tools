@@ -41,13 +41,16 @@ const (
 const (
 	defaultMaxNodes          = 5000
 	defaultMaxSamplesPerNode = 10
+	defaultMaxSizePerNode    = 0 // no constraints
 	defaultDumpPeriod        = 10 * time.Second
 )
 
 type StorageParams struct {
-	Enabled   bool
-	Directory string
-	Period    time.Duration
+	Enabled        bool
+	Directory      string
+	Period         time.Duration
+	CoalesceLast   bool
+	MaxSizePerNode int
 }
 
 type Params struct {
@@ -63,9 +66,11 @@ type environ struct {
 func DefaultParams() Params {
 	return Params{
 		Storage: StorageParams{
-			Enabled:   false,
-			Directory: DefaultDumpDirectory,
-			Period:    10 * time.Second,
+			Enabled:        false,
+			Directory:      DefaultDumpDirectory,
+			Period:         10 * time.Second,
+			CoalesceLast:   false,
+			MaxSizePerNode: defaultMaxSizePerNode,
 		},
 	}
 }
@@ -95,7 +100,12 @@ func Setup(logh logr.Logger, params Params) {
 
 	logh.Info("Setup in progress", "params", fmt.Sprintf("%+#v", params))
 
-	rec, err := record.NewRecorder(record.WithMaxNodes(defaultMaxNodes), record.WithNodeCapacity(defaultMaxSamplesPerNode))
+	rec, err := record.NewRecorder(
+		record.WithMaxNodes(defaultMaxNodes),
+		record.WithNodeCapacity(defaultMaxSamplesPerNode),
+		record.WithMaxSizePerNode(defaultMaxSizePerNode),
+		record.WithPFPCoalescing(params.Storage.CoalesceLast),
+	)
 	if err != nil {
 		logh.Error(err, "cannot create a status recorder")
 		return
