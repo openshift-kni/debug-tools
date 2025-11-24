@@ -3,7 +3,7 @@ package e2e
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"math/rand"
 	"os"
@@ -79,7 +79,7 @@ var _ = g.Describe("knit IRQ watch tests", func() {
 })
 
 func modifyInterruptsFile(procFs string) (irqs.Stats, error) {
-	fakeLog := log.New(ioutil.Discard, "", 0)
+	fakeLog := log.New(io.Discard, "", 0)
 
 	ih := irqs.New(fakeLog, procFs)
 	stats, err := ih.ReadStats()
@@ -114,7 +114,7 @@ func modifyInterruptsFile(procFs string) (irqs.Stats, error) {
 }
 
 func reWriteInterrupts(procFs string, stats irqs.Stats) error {
-	tmpf, err := ioutil.TempFile(procFs, "interrupts")
+	tmpf, err := os.CreateTemp(procFs, "interrupts")
 	if err != nil {
 		g.Fail(fmt.Sprintf("fail to create temp interrupts file %q", tmpf.Name()))
 		return err

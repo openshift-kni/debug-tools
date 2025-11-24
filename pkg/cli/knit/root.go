@@ -18,7 +18,7 @@ package knit
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"os"
 
@@ -62,7 +62,7 @@ func NewRootCommand(extraCmds ...NewCommandFunc) *cobra.Command {
 			if knitOpts.Debug {
 				knitOpts.Log = log.New(os.Stderr, "knit ", log.LstdFlags)
 			} else {
-				knitOpts.Log = log.New(ioutil.Discard, "", 0)
+				knitOpts.Log = log.New(io.Discard, "", 0)
 			}
 			return nil
 		},

@@ -2,7 +2,7 @@ package procs_test
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"os"
 	"path/filepath"
@@ -12,10 +12,10 @@ import (
 	"github.com/openshift-kni/debug-tools/pkg/procs"
 )
 
-var nullLog = log.New(ioutil.Discard, "", 0)
+var nullLog = log.New(io.Discard, "", 0)
 
 func TestEmpty(t *testing.T) {
-	dir, err := ioutil.TempDir("", "test")
+	dir, err := os.MkdirTemp("", "test")
 	if err != nil {
 		t.Fatalf("creating temp dir %v", err)
 	}
@@ -32,7 +32,7 @@ func TestEmpty(t *testing.T) {
 }
 
 func TestSingleProcSingleThread(t *testing.T) {
-	dir, err := ioutil.TempDir("", "test")
+	dir, err := os.MkdirTemp("", "test")
 	if err != nil {
 		t.Fatalf("creating temp dir %v", err)
 	}
@@ -94,7 +94,7 @@ func makeFakeTree(root string, entries map[int]fakeEntry) error {
 		}
 
 		for name, entry := range entry.attrs {
-			if err := ioutil.WriteFile(filepath.Join(baseDir, name), []byte(entry), os.ModePerm); err != nil {
+			if err := os.WriteFile(filepath.Join(baseDir, name), []byte(entry), os.ModePerm); err != nil {
 				return err
 			}
 		}
@@ -105,7 +105,7 @@ func makeFakeTree(root string, entries map[int]fakeEntry) error {
 				return err
 			}
 			for name, entry := range attrs {
-				if err := ioutil.WriteFile(filepath.Join(taskDir, name), []byte(entry), os.ModePerm); err != nil {
+				if err := os.WriteFile(filepath.Join(taskDir, name), []byte(entry), os.ModePerm); err != nil {
 					return err
 				}
 			}

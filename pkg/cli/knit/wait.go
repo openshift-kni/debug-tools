@@ -17,7 +17,6 @@
 package knit
 
 import (
-	"io/ioutil"
 	"os"
 	"os/signal"
 	"syscall"
@@ -32,7 +31,7 @@ type waitOpts struct {
 func waitForever(dwOpts *waitOpts) error {
 	if dwOpts.healthFile != "" {
 		message := []byte("ok")
-		ioutil.WriteFile(dwOpts.healthFile, message, 0644) // intentionally ignore error
+		os.WriteFile(dwOpts.healthFile, message, 0644) // intentionally ignore error
 	}
 
 	exitSignal := make(chan os.Signal)

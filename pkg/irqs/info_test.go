@@ -21,7 +21,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"os"
 	"path/filepath"
@@ -36,10 +36,10 @@ import (
 	"github.com/openshift-kni/debug-tools/pkg/irqs"
 )
 
-var nullLog = log.New(ioutil.Discard, "", 0)
+var nullLog = log.New(io.Discard, "", 0)
 
 func TestReadStats(t *testing.T) {
-	rootDir, err := ioutil.TempDir("", "test")
+	rootDir, err := os.MkdirTemp("", "test")
 	if err != nil {
 		t.Fatalf("creating temp dir %v", err)
 	}
@@ -49,7 +49,7 @@ func TestReadStats(t *testing.T) {
 	if err := os.Mkdir(procDir, 0755); err != nil {
 		t.Fatalf("Mkdir(%s) failed: %v", procDir, err)
 	}
-	if err := ioutil.WriteFile(filepath.Join(procDir, "interrupts"), []byte(fakeInterrupts), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(procDir, "interrupts"), []byte(fakeInterrupts), 0644); err != nil {
 		t.Fatalf("WriteFile failed: %v", err)
 	}
 
@@ -201,7 +201,7 @@ type irqAffinity struct {
 }
 
 func TestReadInfo(t *testing.T) {
-	rootDir, err := ioutil.TempDir("", "test")
+	rootDir, err := os.MkdirTemp("", "test")
 	if err != nil {
 		t.Fatalf("creating temp dir %v", err)
 	}
@@ -216,7 +216,7 @@ func TestReadInfo(t *testing.T) {
 	if err := os.MkdirAll(irqAll, 0755); err != nil {
 		t.Fatalf("Mkdir(%s) failed: %v", irqDir, err)
 	}
-	if err := ioutil.WriteFile(filepath.Join(irqDir, "smp_affinity_list"), []byte("3,7"), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(irqDir, "smp_affinity_list"), []byte("3,7"), 0644); err != nil {
 		t.Fatalf("WriteFile failed: %v", err)
 	}
 

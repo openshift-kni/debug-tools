@@ -2,7 +2,7 @@ package e2e
 
 import (
 	"fmt"
-	"io/ioutil"
+	"os"
 	"os/exec"
 	"path/filepath"
 
@@ -39,7 +39,7 @@ var _ = g.Describe("knit IRQ affinity tests", func() {
 			refPath := filepath.Join(dataDir, "irqaff.json")
 			fmt.Fprintf(g.GinkgoWriter, "reference data at: %q\n", refPath)
 
-			expected, err := ioutil.ReadFile(refPath)
+			expected, err := os.ReadFile(refPath)
 			if err != nil {
 				g.Fail(fmt.Sprintf("fail to read the irqaff reference data from %q", refPath))
 			}
