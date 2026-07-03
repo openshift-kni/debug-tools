@@ -17,7 +17,6 @@
 package fswrap
 
 import (
-	"io/ioutil"
 	"log"
 	"os"
 )
@@ -33,10 +32,22 @@ func (fs FSWrapper) Open(name string) (*os.File, error) {
 
 func (fs FSWrapper) ReadFile(filename string) ([]byte, error) {
 	fs.Log.Printf("fswrap %-8s %q", "ReadFile", filename)
-	return ioutil.ReadFile(filename)
+	return os.ReadFile(filename)
 }
 
 func (fs FSWrapper) ReadDir(dirname string) ([]os.FileInfo, error) {
 	fs.Log.Printf("fswrap %-8s %q", "ReadDir", dirname)
-	return ioutil.ReadDir(dirname)
+	entries, err := os.ReadDir(dirname)
+	if err != nil {
+		return nil, err
+	}
+	infos := make([]os.FileInfo, 0, len(entries))
+	for _, entry := range entries {
+		info, err := entry.Info()
+		if err != nil {
+			return nil, err
+		}
+		infos = append(infos, info)
+	}
+	return infos, nil
 }

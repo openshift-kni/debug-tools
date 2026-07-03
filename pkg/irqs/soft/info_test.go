@@ -18,7 +18,7 @@ package soft_test
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"os"
 	"path/filepath"
@@ -34,10 +34,10 @@ func TestNames(t *testing.T) {
 	}
 }
 
-var nullLog = log.New(ioutil.Discard, "", 0)
+var nullLog = log.New(io.Discard, "", 0)
 
 func TestReadInfo(t *testing.T) {
-	rootDir, err := ioutil.TempDir("", "test")
+	rootDir, err := os.MkdirTemp("", "test")
 	if err != nil {
 		t.Fatalf("creating temp dir %v", err)
 	}
@@ -47,7 +47,7 @@ func TestReadInfo(t *testing.T) {
 	if err := os.Mkdir(procDir, 0755); err != nil {
 		t.Fatalf("Mkdir(%s) failed: %v", procDir, err)
 	}
-	if err := ioutil.WriteFile(filepath.Join(procDir, "softirqs"), []byte(fakeSoftirqs), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(procDir, "softirqs"), []byte(fakeSoftirqs), 0644); err != nil {
 		t.Fatalf("WriteFile failed: %v", err)
 	}
 

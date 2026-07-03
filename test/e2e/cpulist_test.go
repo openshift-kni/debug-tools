@@ -3,7 +3,6 @@ package e2e
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -56,7 +55,7 @@ var _ = g.Describe("cpulist", func() {
 
 	g.Context("without arguments", func() {
 		g.It("parses correctly /proc/self/status", func() {
-			rootDir, err := ioutil.TempDir("", "test")
+			rootDir, err := os.MkdirTemp("", "test")
 			if err != nil {
 				g.Fail(fmt.Sprintf("creating temp dir %v", err))
 			}
@@ -67,7 +66,7 @@ var _ = g.Describe("cpulist", func() {
 			if err := os.MkdirAll(procSelfTaskDir, 0755); err != nil {
 				g.Fail(fmt.Sprintf("Mkdir(%s) failed: %v", procSelfTaskDir, err))
 			}
-			if err := ioutil.WriteFile(filepath.Join(procSelfTaskDir, "status"), []byte(fakeSelfStatus), 0644); err != nil {
+			if err := os.WriteFile(filepath.Join(procSelfTaskDir, "status"), []byte(fakeSelfStatus), 0644); err != nil {
 				g.Fail(fmt.Sprintf("WriteFile failed: %v", err))
 			}
 

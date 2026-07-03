@@ -18,7 +18,7 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"os"
 	"strings"
@@ -41,9 +41,9 @@ func main() {
 		var err error
 		var data []byte
 		if *srcFile == "-" {
-			data, err = ioutil.ReadAll(os.Stdin)
+			data, err = io.ReadAll(os.Stdin)
 		} else {
-			data, err = ioutil.ReadFile(*srcFile)
+			data, err = os.ReadFile(*srcFile)
 		}
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "error reading cpulist from %q: %v\n", *srcFile, err)
@@ -68,7 +68,7 @@ func parseCPUsOrDie(cpuList string) cpuset.CPUSet {
 }
 
 func allowedCPUsOrDie(procfsRoot string) cpuset.CPUSet {
-	nullLog := log.New(ioutil.Discard, "", 0)
+	nullLog := log.New(io.Discard, "", 0)
 	ph := procs.New(nullLog, procfsRoot)
 	info, err := ph.FromPID(0)
 	if err != nil {
