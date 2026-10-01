@@ -1,0 +1,28 @@
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: pfpstatus-debugger
+  namespace: PLACEHOLDER
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: pfpstatus-debugger
+rules:
+  - apiGroups: ["topology.node.k8s.io"]
+    resources: ["noderesourcetopologies"]
+    verbs: ["sched.openshift-kni.io/debug"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: pfpstatus-debugger
+subjects:
+- kind: ServiceAccount
+  name: pfpstatus-debugger
+  namespace: PLACEHOLDER
+roleRef:
+  kind: ClusterRole
+  name: pfpstatus-debugger
+  apiGroup: rbac.authorization.k8s.io

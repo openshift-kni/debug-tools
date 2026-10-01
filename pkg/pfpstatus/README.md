@@ -12,3 +12,10 @@ The status info can be exposed by
 - dumping the content as JSON files, one per node, in the filesystem.
   We recommend to use a fixed size tmpfs to avoid unbounded storage consumption.
   The writer dumps the status content atomically and intentionally ignores write errors because assumes fixed size storage.
+- expose the content through a HTTP endpoint
+  TLS is not supported atm, but there is support to inject authentication middleware to avoid information disclosure.
+  The built-in middlewer supports Token-based authentication and uses Subject Access Review.
+
+## Built-in authentication details
+
+TBD
