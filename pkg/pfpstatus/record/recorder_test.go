@@ -19,7 +19,9 @@ package record
 import (
 	"errors"
 	"fmt"
+	"io"
 	"testing"
+	"time"
 
 	"github.com/k8stopologyawareschedwg/podfingerprint"
 )
@@ -391,4 +393,141 @@ func TestRecorderMultiPushMultipleNodes(t *testing.T) {
 	if rr.CountRecords("node-0") != 5 {
 		t.Fatalf("unexpected status count for %q", "node-0")
 	}
+}
+
+func TestRecorderWithCoalescing(t *testing.T) {
+	rr, err := NewRecorder(WithMaxNodes(1), WithNodeCapacity(10), WithPFPCoalescing(true))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if rr.IsCoalescing() != true {
+		t.Fatalf("IsCoalescing should be true")
+	}
+
+	st := podfingerprint.Status{
+		FingerprintExpected: "pfp-exp-st1",
+		FingerprintComputed: "pfp-comp-st1",
+		NodeName:            "node-1",
+	}
+
+	rr.Push(st)
+	rs1 := rr.Content()["node-1"][0]
+	rr.Push(st)
+	rs2 := rr.Content()["node-1"][0]
+	if !rs2.RecordTime.Equal(rs1.RecordTime) {
+		t.Fatalf("RecordTime should not change, %v vs %v", rs2.RecordTime, rs1.RecordTime)
+	}
+	rr.Push(st)
+	rs3 := rr.Content()["node-1"][0]
+	if !rs3.RecordTime.Equal(rs1.RecordTime) {
+		t.Fatalf("RecordTime should not change, %v vs %v", rs3.RecordTime, rs1.RecordTime)
+	}
+
+	if rr.CountRecords("node-1") != 1 {
+		t.Fatalf("unexpected status count with WithCoalescing option set to true")
+	}
+
+	if rr.nodes["node-1"].IsCoalescing() != true {
+		t.Fatalf("unexpected status with WithCoalescing option set to true")
+	}
+
+	st.FingerprintExpected = "pfp-exp-st2"
+	rr.Push(st)
+	if rr.CountRecords("node-1") != 2 {
+		t.Fatalf("unexpected status count")
+	}
+
+	st.FingerprintComputed = "pfp-comp-st2"
+	rr.Push(st)
+	if rr.CountRecords("node-1") != 3 {
+		t.Fatalf("unexpected status count")
+	}
+}
+
+func TestRecorderWithMaxSize(t *testing.T) {
+	rr, err := NewRecorder(WithMaxNodes(8), WithNodeCapacity(5), WithMaxSizePerNode(1500))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if rr.MaxSize() != 1500 {
+		t.Fatalf("unexpected max size: %d", rr.MaxSize())
+	}
+}
+
+func TestNodeRecorderWithMaxSize(t *testing.T) {
+	rt := time.Now() // to manage accurate size checks
+	rtf := func() time.Time {
+		return rt
+	}
+
+	st := podfingerprint.Status{
+		FingerprintExpected: "pfp-exp-st1",
+		FingerprintComputed: "pfp-comp-st1",
+		NodeName:            "node-0",
+	}
+	rs := RecordedStatus{
+		Status:     st,
+		RecordTime: rt,
+	}
+	stSize := rs.Size()
+	maxSize := 2*stSize + 1000
+
+	nr, err := NewNodeRecorder("node-0", WithCapacity(5), WithTimestamper(rtf), WithMaxSize(maxSize))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if nr.MaxSize() != maxSize {
+		t.Fatalf("unexpected max size: %d vs %d", nr.MaxSize(), maxSize)
+	}
+
+	for i := 0; i < 2; i++ {
+		if err := nr.Push(st); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+	}
+
+	stSize += rs.Size()
+	if nr.Len() != 2 {
+		t.Fatalf("unexpected length: %d", nr.Len())
+	}
+	if nr.size != stSize {
+		t.Fatalf("unexpected size: %d vs %d", nr.size, stSize)
+	}
+
+	var pods []podfingerprint.NamespacedName
+	for i := 0; getSize(pods) < maxSize; i++ {
+		pods = append(pods, podfingerprint.NamespacedName{
+			Namespace: fmt.Sprintf("pod-name %d", i),
+			Name:      fmt.Sprintf("namespace-name %d", i),
+		})
+	}
+
+	rs2 := RecordedStatus{
+		Status: podfingerprint.Status{
+			FingerprintExpected: "pfp-exp-st2",
+			FingerprintComputed: "pfp-comp-st2",
+			Pods:                pods,
+			NodeName:            st.NodeName,
+		},
+		RecordTime: rt,
+	}
+
+	if err := nr.Push(rs2.Status); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if nr.Len() != 1 {
+		t.Fatalf("unexpected length: expected 1 found %d", nr.Len())
+	}
+
+	if nr.size != rs2.Size() {
+		t.Fatalf("unexpected size: expected %d found %d", rs2.Size(), nr.size)
+	}
+}
+
+func getSize(pods []podfingerprint.NamespacedName) int {
+	byteCount, _ := fmt.Fprint(io.Discard, fmt.Sprintf("%+v\n", pods))
+	return byteCount
+
 }
